@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulasi Ujian Online - Berbasis Kemendikbud</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --secondary-color: #f8f9fa;
+            --text-color: #333;
+            --border-color: #ddd;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f9;
+            color: var(--text-color);
+        }
+
+        /* Layar Login ID */
+        .login-screen {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .login-screen input {
+            width: 90%;
+            padding: 10px;
+            margin: 15px 0;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        /* Header ala Kemendikbud */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        header h1 { margin: 0; font-size: 1.2rem; }
+
+        .timer {
+            background-color: #ffc107;
+            color: #000;
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        /* Layout Utama */
+        .container {
+            display: flex;
+            max-width: 1200px;
+            margin: 20px auto;
+            gap: 20px;
+            padding: 0 15px;
+        }
+
+        .main-content {
+            flex: 3;
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .question-header {
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .question-text { font-size: 1.05rem; line-height: 1.6; margin-bottom: 20px; }
+
+        /* Pengaturan Gambar Soal (Rata Tengah) */
+        .question-image {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto 20px auto; /* Atas:0, Kanan-Kiri:Otomatis (Tengah), Bawah:20px */
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .options-container { display: flex; flex-direction: column; gap: 12px; }
+
+        .option-item {
+            display: flex;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option-item:hover { background-color: #f0f4f8; }
+        .option-item input { margin-right: 15px; transform: scale(1.2); }
+
+        /* Pengaturan Gambar di Pilihan Ganda */
+        .option-image {
+            max-width: 200px; /* Membatasi lebar gambar pilihan ganda agar rapi */
+            height: auto;
+            margin-top: 8px;
+            margin-left: 32px; /* Menggeser ke kanan agar lurus di bawah teks jawaban */
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            display: block;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .btn-prev { background-color: #6c757d; color: white; }
+        .btn-next { background-color: #28a745; color: white; }
+        .btn-submit { background-color: #dc3545; color: white; width: 100%; margin-top: 15px; padding: 12px; font-size: 1rem;}
+        .btn-login { background-color: var(--primary-color); color: white; width: 95%; padding: 12px; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Sidebar */
+        .sidebar {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            height: fit-content;
+        }
+
+        .sidebar h3 { margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        .number-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+
+        .num-btn {
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .num-btn.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .num-btn.answered { background-color: #e3f2fd; border-color: #90caf9; color: var(--primary-color); }
+
+        /* Layar Selesai */
+        .finish-screen {
+            display: none;
+            max-width: 600px;
+            margin: 50px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .finish-screen h2 { color: #28a745; margin-bottom: 10px; }
+        .score-box { font-size: 2.5rem; font-weight: bold; margin: 20px 0; color: var(--primary-color); }
+        .btn-close-web { background-color: #333; color: white; padding: 12px 30px; font-size: 1rem; }
+
+        /* Layar Hitam (Simulasi Tutup Aplikasi) */
+        .closed-screen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000;
+            color: #fff;
+            text-align: center;
+            padding-top: 20vh;
+            font-family: sans-serif;
+            z-index: 9999;
+        }
+
+        @media (max-width: 768px) {
+            .container { flex-direction: column; }
+            .sidebar { order: -1; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="closed-screen" id="closed-area">
+    <h1 style="font-size: 3rem; color: #ff3333;">❌ JENDELA UJIAN DITUTUP</h1>
+    <p style="font-size: 1.2rem; color: #ccc;">Aplikasi simulasi telah dinonaktifkan dengan aman.</p>
+    <p>Silakan tutup tab browser Anda secara manual.</p>
+</div>
+
+<div class="login-screen" id="login-area">
+    <h2>MASUK SIMULASI UJIAN</h2>
+    <p>Silakan masukkan identitas Anda dengan benar.</p>
+    <input type="text" id="input-no-peserta" placeholder="Masukkan Nomor Peserta" autocomplete="off">
+    <input type="password" id="input-password" placeholder="Masukkan Password" autocomplete="off">
+    <button class="btn btn-login" id="btn-proses-login" onclick="loginSiswa()">Masuk Jendela Ujian</button>
+</div>
+
+<div id="exam-full-area" style="display: none;">
+    <header id="main-header">
+        <h1>ASESMEN ONLINE - <span id="display-id-siswa"></span></h1>
+        <div class="timer" id="timer">Sisa Waktu: 60:00</div>
+    </header>
+
+    <div class="container">
+        <main class="main-content">
+            <div>
+                <div class="question-header" id="question-number">Soal Nomor 1</div>
+                <img id="question-img" class="question-image" src="" alt="Gambar Soal" style="display: none;">
+                <div class="question-text" id="question-text">Memuat soal...</div>
+                <div class="options-container" id="options-container"></div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="btn btn-prev" id="btn-prev" onclick="changeQuestion(-1)">Sebelumnya</button>
+                <button class="btn btn-next" id="btn-next" onclick="changeQuestion(1)">Berikutnya</button>
+            </div>
+        </main>
+
+        <aside class="sidebar">
+            <h3>Navigasi Soal</h3>
+            <div class="number-grid" id="number-grid"></div>
+            
+            <button class="btn btn-submit" id="btn-submit" onclick="confirmSubmit()">Selesai Ujian</button>
+        </aside>
+    </div>
+</div>
+
+<div class="finish-screen" id="finish-area">
+    <h2>Terima Kasih!</h2>
+    <p>Ujian Anda telah selesai dan nilai sudah direkapitulasi ke sistem pusat.</p>
+    <div class="score-box" id="final-score">Nilai: 0</div>
+    <p id="correct-detail">Benar: 0 dari 0 soal</p>
+    <br>
+    <button class="btn btn-close-web" onclick="closeWindow()">Tutup Jendela Ujian</button>
+</div>
+
+<script>
+    // ⚠️ BARIS 208: PASTE URL GOOGLE APPS SCRIPT ANDA DI SINI
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzmd9po5KBL-9ADZrHwa2uqoAHqr9reMm3Jv3WQ6RRTR35lyqJ8nOUASAYFRL84axjpbQ/exec";
+
+    // --- STRUKTUR DATA SOAL BARU (Mendukung Teks & Gambar Pilihan) ---
+    const examData = [
+        {
+            id: 1,
+            question: "Perhatikan gambar di atas. Organ tubuh tersebut berfungsi untuk memompa darah ke seluruh tubuh, organ apakah yang dimaksud?",
+            image: "https://lh3.googleusercontent.com/d/ID_GAMBAR_ANDA0", // Gambar Utama Soal (Rata Tengah)
+            options: [
+                { teks: "Jantung", gambar: "" }, // Jika pilihan ganda ini tidak pakai gambar, kosongkan saja ""
+                { teks: "Paru-paru", gambar: "" },
+                { teks: "Hati", gambar: "" },
+                { teks: "Ginjal", gambar: "" }
+            ],
+            correct: 0 // Index Jawaban Benar (0=A, 1=B, 2=C, 3=D)
+        },
+        {
+            id: 2,
+            question: "Manakah di bawah ini yang merupakan bendera dari negara Indonesia?",
+            image: "", // Kosongkan jika soal tidak ada gambar utamanya
+            options: [
+                { teks: "Bendera Monako", gambar: "https://lh3.googleusercontent.com/d/ID_GAMBAR_ANDA1" }, // Gambar di pilihan ganda
+                { teks: "Bendera Indonesia", gambar: "https://lh3.googleusercontent.com/d/ID_GAMBAR_ANDA2" }, 
+                { teks: "Bendera Polandia", gambar: "https://lh3.googleusercontent.com/d/ID_GAMBAR_ANDA3" },
+                { teks: "Bendera Singapura", gambar: "https://lh3.googleusercontent.com/d/ID_GAMBAR_ANDA4" }
+            ],
+            correct: 1 // Jawaban benar adalah B (index 1)
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let userAnswers = new Array(examData.length).fill(null);
+    let timeLeft = 60 * 60; // Durasi Ujian (60 Menit)
+    let countdownInterval;
+    let globalIdSiswa = "";
+
+    // Fungsi Validasi Login (Nomor Peserta & Password) ke Google Sheet
+    async function loginSiswa() {
+        const noPesertaInput = document.getElementById('input-no-peserta').value.trim();
+        const passwordInput = document.getElementById('input-password').value.trim();
+        
+        if (!noPesertaInput || !passwordInput) {
+            return alert("Nomor Peserta dan Password wajib diisi!");
+        }
+        
+        const btnLogin = document.getElementById('btn-proses-login');
+        btnLogin.innerText = "Memvalidasi...";
+        btnLogin.disabled = true;
+
+        try {
+            const respon = await fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ 
+                    aksi: "cekID", 
+                    noPeserta: noPesertaInput, 
+                    password: passwordInput 
+                })
+            });
+            const hasil = await respon.json();
+
+            if (hasil.status === "valid") {
+                globalIdSiswa = noPesertaInput; 
+                document.getElementById('display-id-siswa').innerText = `${hasil.nama} (${noPesertaInput})`;
+                document.getElementById('login-area').style.display = 'none';
+                document.getElementById('exam-full-area').style.display = 'block';
+                initExam();
+            } else {
+                alert("Nomor Peserta atau Password SALAH! Silakan periksa kembali data Anda.");
+                btnLogin.innerText = "Masuk Jendela Ujian";
+                btnLogin.disabled = false;
+            }
+        } catch (e) {
+            alert("Gagal terhubung ke sistem rekap. Pastikan SCRIPT_URL benar.");
+            btnLogin.innerText = "Masuk Jendela Ujian";
+            btnLogin.disabled = false;
+        }
+    }
+
+    function initExam() {
+        renderQuestion();
+        renderSidebar();
+        startTimer();
+    }
+
+    // Menampilkan Soal dan Menangani Gambar Multi-Fungsi
+    function renderQuestion() {
+        const currentQuestion = examData[currentQuestionIndex];
+        document.getElementById('question-number').innerText = `Soal Nomor ${currentQuestionIndex + 1}`;
+        document.getElementById('question-text').innerText = currentQuestion.question;
+
+        // Atur Gambar Utama Soal
+        const imgElement = document.getElementById('question-img');
+        if (currentQuestion.image && currentQuestion.image.trim() !== "") {
+            imgElement.src = currentQuestion.image;
+            imgElement.style.display = 'block';
+        } else {
+            imgElement.style.display = 'none';
+        }
+
+        // Atur Pilihan Jawaban (Teks + Gambar Pilihan)
+        const optionsContainer = document.getElementById('options-container');
+        optionsContainer.innerHTML = '';
+        
+        const labels = ['A', 'B', 'C', 'D'];
+        currentQuestion.options.forEach((option, index) => {
+            const isChecked = userAnswers[currentQuestionIndex] === index ? 'checked' : '';
+            
+            let htmlGambarPilihan = "";
+            if (option.gambar && option.gambar.trim() !== "") {
+                htmlGambarPilihan = `<img src="${option.gambar}" class="option-image" alt="Gambar Pilihan ${labels[index]}">`;
+            }
+
+            optionsContainer.innerHTML += `
+                <label class="option-item" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                    <div style="display: flex; align-items: center;">
+                        <input type="radio" name="answer" value="${index}" ${isChecked} onchange="saveAnswer(${index})">
+                        <span><strong>${labels[index]}.</strong> ${option.teks}</span>
+                    </div>
+                    ${htmlGambarPilihan}
+                </label>
+            `;
+        });
+
+        // Pengaturan Status Tombol Navigasi Bawah
+        document.getElementById('btn-prev').disabled = currentQuestionIndex === 0;
+        document.getElementById('btn-next').disabled = currentQuestionIndex === examData.length - 1;
+        
+        updateSidebarActive();
+    }
+
+    function saveAnswer(index) { userAnswers[currentQuestionIndex] = index; renderSidebar(); }
+    function changeQuestion(direction) { currentQuestionIndex += direction; renderQuestion(); }
+    function jumpToQuestion(index) { currentQuestionIndex = index; renderQuestion(); }
+
+    function renderSidebar() {
+        const grid = document.getElementById('number-grid');
+        grid.innerHTML = '';
+        examData.forEach((soal, index) => {
+            let statusClass = userAnswers[index] !== null ? 'answered' : '';
+            if (index === currentQuestionIndex) statusClass = 'active';
+            grid.innerHTML += `<div class="num-btn ${statusClass}" onclick="jumpToQuestion(${index})">${index + 1}</div>`;
+        });
+    }
+
+    function updateSidebarActive() {
+        const buttons = document.querySelectorAll('.num-btn');
+        buttons.forEach((btn, index) => {
+            btn.classList.remove('active');
+            if (index === currentQuestionIndex) btn.classList.add('active');
+        });
+    }
+
+    function startTimer() {
+        const timerElement = document.getElementById('timer');
+        countdownInterval = setInterval(() => {
+            let minutes = Math.floor(timeLeft / 60);
+            let seconds = timeLeft % 60;
+            timerElement.innerText = `Sisa Waktu: ${(minutes<10?'0':'')+minutes}:${(seconds<10?'0':'')+seconds}`;
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+                submitExam();
+            }
+            timeLeft--;
+        }, 1000);
+    }
+
+    function confirmSubmit() {
+        const belumDijawab = userAnswers.filter(ans => ans === null).length;
+        let pesan = "Apakah Anda yakin ingin menyelesaikan ujian sekarang?";
+        if(belumDijawab > 0) pesan = `PERINGATAN: Masih ada ${belumDijawab} soal belum dijawab. Tetap selesai?`;
+        if (confirm(pesan)) { clearInterval(countdownInterval); submitExam(); }
+    }
+
+    async function submitExam() {
+        let jumlahBenar = 0;
+        examData.forEach((soal, index) => {
+            if (userAnswers[index] === parseInt(soal.correct)) jumlahBenar++;
+        });
+        const nilai = Math.round((jumlahBenar / examData.length) * 100);
+
+        document.getElementById('exam-full-area').style.display = 'none';
+        
+        // Mengubah Kalimat Pemberitahuan Pengiriman Sesuai Permintaan Anda
+        alert("Jawaban Anda sedang disimpan ke server pusat. Silakan klik OK.");
+
+        try {
+            await fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({
+                    aksi: "simpanNilai",
+                    idSiswa: globalIdSiswa,
+                    nilai: nilai,
+                    benar: jumlahBenar,
+                    totalSoal: examData.length
+                })
+            });
+        } catch (e) {
+            alert("Koneksi tidak stabil. Rekap nilai gagal terkirim otomatis.");
+        }
+
+        document.getElementById('final-score').innerText = `Nilai Anda: ${nilai}`;
+        document.getElementById('correct-detail').innerText = `Benar ${jumlahBenar} dari ${examData.length} soal.`;
+        document.getElementById('finish-area').style.display = 'block';
+    }
+
+    function closeWindow() {
+        window.close();
+        setTimeout(function() {
+            document.getElementById('finish-area').style.display = 'none';
+            document.getElementById('closed-area').style.display = 'block';
+        }, 100);
+    }
+</script>
+</body>
+</html>
